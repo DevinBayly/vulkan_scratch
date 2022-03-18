@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "VulkanTest",
+            "program": "${workspaceRoot}/VulkanTest",
             "args": ["test"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
