@@ -243,6 +243,9 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
+        for(int i = 0 ; i < swapChainImages.size();i++) {
+        updateUniformBuffer(i);
+        }
     }
 
     void mainLoop() {
@@ -657,7 +660,7 @@ private:
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkViewport viewport{};
@@ -1002,51 +1005,38 @@ private:
 
         endSingleTimeCommands(commandBuffer);
     }
-
+    float randf() {
+        return (float)rand()/(float)(RAND_MAX);
+    }
     void loadModel() {
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
-        std::string warn, err;
+        // declare number of vertices
+        size_t vertNum{50000};
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials,  &err, MODEL_PATH.c_str())) {
-            throw std::runtime_error(warn + err);
+        for(size_t vn = 0;vn < vertNum; vn++){
+            Vertex vertex{};
+        // include information about vertex color
+        vertex.pos = {
+            randf(),randf(),randf()
+        };
+        vertex.texCoord = {0.0f,0.0f};
+        vertex.color ={
+            randf()+.5f,randf()+.5f,randf()+.5f
+        }; 
+        vertices.push_back(vertex);
+
+        // don't use the texcoord data
+
+        // use unique indexing
+        indices.push_back(vn);
         }
 
-        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-        for (const auto& shape : shapes) {
-            for (const auto& index : shape.mesh.indices) {
-                Vertex vertex{};
-
-                vertex.pos = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
-                };
-
-                vertex.texCoord = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                };
-
-                vertex.color = {1.0f, 1.0f, 1.0f};
-
-                
-                if (uniqueVertices.count(vertex) == 0) {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                    vertices.push_back(vertex);
-                }
-                // we then use the value of the vertex from the map for the indices
-                indices.push_back(uniqueVertices[vertex]);
-            }
-        }
     }
 
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
         VkBuffer stagingBuffer;
+        
         VkDeviceMemory stagingBufferMemory;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
@@ -1350,7 +1340,6 @@ private:
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        updateUniformBuffer(imageIndex);
 
         if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
