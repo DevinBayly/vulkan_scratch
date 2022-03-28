@@ -1,4 +1,4 @@
-CFLAGS = -std=c++17 -g
+CFLAGS = -std=c++17 -g  -O3
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi -I./
 
 VulkanTest: main.cpp shaders
