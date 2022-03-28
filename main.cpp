@@ -145,6 +145,11 @@ public:
     }
 
 private:
+    // this value to help debug number of frames elapsed;
+    int fpsFrames=100;
+    int frc=0;
+    float totalTime=0.0f;
+    size_t vertNum{5000000};
     GLFWwindow* window;
 
     VkInstance instance;
@@ -243,9 +248,6 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
-        for(int i = 0 ; i < swapChainImages.size();i++) {
-        updateUniformBuffer(i);
-        }
     }
 
     void mainLoop() {
@@ -1010,7 +1012,7 @@ private:
     }
     void loadModel() {
         // declare number of vertices
-        size_t vertNum{50000};
+        
 
         for(size_t vn = 0;vn < vertNum; vn++){
             Vertex vertex{};
@@ -1019,9 +1021,7 @@ private:
             randf(),randf(),randf()
         };
         vertex.texCoord = {0.0f,0.0f};
-        vertex.color ={
-            randf()+.5f,randf()+.5f,randf()+.5f
-        }; 
+        vertex.color =vertex.pos; 
         vertices.push_back(vertex);
 
         // don't use the texcoord data
@@ -1328,6 +1328,8 @@ private:
     }
 
     void drawFrame() {
+        auto startTime = std::chrono::high_resolution_clock::now();
+
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -1346,6 +1348,7 @@ private:
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
+        updateUniformBuffer(imageIndex);
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -1390,6 +1393,14 @@ private:
         }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - startTime).count();
+        totalTime+=time;
+        frc+=1;
+        if(frc%fpsFrames ==0){
+        std::cout<< "ave ms passed" << totalTime/(float)fpsFrames<< std::endl;
+        totalTime =0.0f;
+        };
     }
 
     VkShaderModule createShaderModule(const std::vector<char>& code) {
